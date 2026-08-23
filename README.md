@@ -32,9 +32,11 @@ First, install Podman in your OS (Docker works fine as well), for example, in Ar
 
     $ sudo pacman -S podman
 
-Install Distrobox. I tried the "distrobox-git" package in AUR, but Distrobox is still in heavy development and I stumbled upon a old bug that was already solved in the main branch, so I recommend installing the "unstable" version manually:
+Install Distrobox using the official installer script:
 
-    $ curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh -s -- --next
+    $ curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
+
+(older versions of this README recommended a `--next`/unstable flag to work around a bug in the stable release; that flag no longer exists and Distrobox has since matured enough that the plain install works fine)
 
 Now you have 2 options. The easy one is to just pull the image from DockerHub:
 
@@ -64,9 +66,11 @@ permanent. If you prefer not to expose your home directory directly, you can poi
       -i akitaonrails/webdevbox \
       -n webdevbox-demo -I \
       -H ~/.local/share/distrobox/webdevbox \
-      --volume $HOME:/mnt/host
+      --volume $HOME:/host-home
 
-I prefer to map to a new directory and have a separated home per box. Then map my home as an external drive in "/mnt/host".
+I prefer to map to a new directory and have a separated home per box. Then map my home as an external drive in "/host-home".
+
+*NOTE:* don't mount your extra volume under `/mnt/...`. Distrobox automatically bind-mounts the host's own `/mnt`, `/media`, `/run/media` (and a few other paths) into every container for removable-media integration, and that automatic mount will silently shadow anything you mount underneath it yourself.
 
 Then we can initialize [Chezmoi](https://www.chezmoi.io/). I'd recommend first forking my [dotfiles repository](https://github.com/akitaonrails/dotfiles), but let's use it as example:
 
@@ -178,11 +182,18 @@ If you see errors similar to this:
 
 `ERRO[0000] running `/usr/sbin/newuidmap 25137 0 1000 1 1 75537 65535`: newuidmap: write to uid_map failed: Operation not permitted`
 
+or this:
+
+`newuidmap: Could not set caps` / `should have setuid or have filecaps setuid`
+
 Then run this in the terminal:
 
     $ __webdevbox_podman_config
 
-The initial welcome script already runs this, but for some reason the error comes back until we run this again.
+The initial welcome script already runs this. The second error above happens because rootless image builds strip the setuid bit off `newuidmap`/`newgidmap`; the welcome script now also restores that bit automatically on first login, but if you rebuilt the image yourself and still hit it, run:
+
+    $ sudo chmod u+s /usr/bin/newuidmap /usr/bin/newgidmap
+    $ __webdevbox_podman_config
 
 Happy Hacking!
 
