@@ -51,7 +51,6 @@ RUN pacman -Syyu --noconfirm \
         podman \
         podman-compose \
         podman-docker \
-        podman-dnsname \
         postgresql-libs \
         procs \
         redis \
