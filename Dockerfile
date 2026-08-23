@@ -74,7 +74,6 @@ RUN pacman -Syyu --noconfirm \
         zsh-completions \
         zsh-history-substring-search \
         zsh-syntax-highlighting \
-        zsh-theme-powerlevel10k \
     ; pacman -Rns $(pacman -Qtdq) \
     ; pacman -Scc --noconfirm \
     ; rm -Rf /var/cache/pacman/pkg/*
@@ -114,6 +113,7 @@ RUN aur-install \
         urlview \
         wrk \
         zsh-git-prompt \
+        zsh-theme-powerlevel10k \
         zsh-vi-mode \
     ; pacman -Rns $(pacman -Qtdq) \
     ; pacman -Scc --noconfirm \
