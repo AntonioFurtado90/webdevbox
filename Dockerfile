@@ -193,7 +193,6 @@ RUN mkdir -p /var/lib/shared/overlay-images \
 
 ENV _CONTAINERS_USERNS_CONFIGURED=""
 
-RUN echo "source /opt/asdf-vm/asdf.sh" >> /etc/profile ;\
-    sed 's/PATH=/PATH=$HOME\/.local\/bin/g' -i /etc/profile
+RUN echo 'export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"' >> /etc/profile
 
 CMD ["/bin/zsh"]
