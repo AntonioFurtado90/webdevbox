@@ -175,10 +175,11 @@ RUN chown podman:podman -R /home/podman
 
 # chmod containers.conf and adjust storage.conf to enable Fuse storage.
 RUN chmod 644 /etc/containers/containers.conf \
+    ; cp /usr/share/containers/storage.conf /etc/containers/storage.conf \
     ; sed -i -e 's|^#mount_program|mount_program|g' \
-    -e '/additionalimage.*/a "/var/lib/shared",' \
+    -e 's|^# *additionalimagestores = \[\]|additionalimagestores = ["/var/lib/shared"]|g' \
     -e 's|^mountopt[[:space:]]*=.*$|mountopt = "nodev,fsync=0"|g' \
-    -e '/#ignore_chown_errors = false/ignore_chown_errors = true/g' \
+    -e 's|^#ignore_chown_errors = "false"|ignore_chown_errors = "true"|g' \
     /etc/containers/storage.conf
 
 RUN mkdir -p /var/lib/shared/overlay-images \
