@@ -120,30 +120,28 @@ RUN aur-install \
     ; rm -Rf .cache/yay/* \
     ; rm -Rf /var/cache/foreign-pkg/*
 
-RUN source /opt/asdf-vm/asdf.sh \
-    && asdf plugin-add crystal \
-    && asdf plugin-add dotnet-core \
-    && asdf plugin-add elixir \
-    && asdf plugin-add erlang \
-    && asdf plugin-add golang \
-    && asdf plugin-add haskell \
-    && asdf plugin-add java \
-    && asdf plugin-add julia \
-    && asdf plugin-add kotlin \
-    && asdf plugin-add lua \
-    && asdf plugin-add nim \
-    && asdf plugin-add nodejs \
-    && asdf plugin-add php \
-    && asdf plugin-add python \
-    && asdf plugin-add ruby \
-    && asdf plugin-add rust \
-    && asdf plugin-add scala \
-    && asdf plugin-add zig \
-    && asdf plugin-add python
+RUN asdf plugin add crystal \
+    && asdf plugin add dotnet-core \
+    && asdf plugin add elixir \
+    && asdf plugin add erlang \
+    && asdf plugin add golang \
+    && asdf plugin add haskell \
+    && asdf plugin add java \
+    && asdf plugin add julia \
+    && asdf plugin add kotlin \
+    && asdf plugin add lua \
+    && asdf plugin add nim \
+    && asdf plugin add nodejs \
+    && asdf plugin add php \
+    && asdf plugin add python \
+    && asdf plugin add ruby \
+    && asdf plugin add rust \
+    && asdf plugin add scala \
+    && asdf plugin add zig
 
-RUN source /opt/asdf-vm/asdf.sh && asdf install python latest && asdf install nodejs latest && asdf global python latest && asdf global nodejs latest
+RUN export PATH="$HOME/.asdf/shims:$PATH" && asdf install python latest && asdf install nodejs latest && asdf set -u python latest && asdf set -u nodejs latest
 
-RUN source /opt/asdf-vm/asdf.sh && LV_BRANCH="release-${LUNARVIM_VERSION}/neovim-${NEOVIM_VERSION}" \
+RUN export PATH="$HOME/.asdf/shims:$PATH" && LV_BRANCH="release-${LUNARVIM_VERSION}/neovim-${NEOVIM_VERSION}" \
     bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/master/utils/installer/install.sh) -y
 
 RUN mkdir -p /etc/skel/.local/share \
