@@ -4,6 +4,8 @@ if [ -f /var/tmp/first-time.lock ]; then
   sudo chown -R $UID:$GID $HOME/.config
   sudo chown -R $UID:$GID $HOME/.local
   sudo chown -R $UID:$GID $HOME/.asdf
+  # rootless image builds strip the setuid bit; restore it so nested podman works
+  sudo chmod u+s /usr/bin/newuidmap /usr/bin/newgidmap
   __webdevbox_podman_config
 
   echo "Welcome to webDevBox"
