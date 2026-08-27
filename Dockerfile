@@ -144,6 +144,25 @@ RUN export PATH="$HOME/.asdf/shims:$PATH" && asdf install python latest && asdf 
 RUN export PATH="$HOME/.asdf/shims:$PATH" && LV_BRANCH="release-${LUNARVIM_VERSION}/neovim-${NEOVIM_VERSION}" \
     bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/master/utils/installer/install.sh) -y
 
+# LunarVim ${LUNARVIM_VERSION} pins plugins for neovim ${NEOVIM_VERSION}, but Arch's `neovim`
+# package (installed above) tracks upstream head, so two of LunarVim's bundled plugins are
+# broken out of the box on this image:
+#   1. nvim-treesitter (still) registers the "has-ancestor?"/"has-parent?" query predicates
+#      unconditionally; recent neovim registers them natively, so nvim-treesitter's own
+#      registration throws "Overriding existing predicate" and aborts loading treesitter
+#      entirely. Force the override instead of erroring.
+#   2. jose-elias-alvarez/null-ls.nvim was deleted upstream (the maintainer archived/removed
+#      it); the community fork nvimtools/none-ls.nvim is a drop-in replacement that keeps the
+#      same `require("null-ls")` module name, so LunarVim's own null-ls integration code needs
+#      no other changes.
+RUN sed -i \
+        -e 's/query\.add_predicate("has-ancestor?", has_ancestor)/query.add_predicate("has-ancestor?", has_ancestor, { force = true })/' \
+        -e 's/query\.add_predicate("has-parent?", has_ancestor)/query.add_predicate("has-parent?", has_ancestor, { force = true })/' \
+        /root/.local/share/lunarvim/site/pack/lazy/opt/nvim-treesitter/lua/nvim-treesitter/query_predicates.lua \
+    && sed -i \
+        -e 's#{ "jose-elias-alvarez/null-ls.nvim", lazy = true },#{ "nvimtools/none-ls.nvim", name = "null-ls.nvim", lazy = true },#' \
+        /root/.local/share/lunarvim/lvim/lua/lvim/plugins.lua
+
 RUN mkdir -p /etc/skel/.local/share \
     && mkdir -p /etc/skel/.local/bin \
     && mkdir -p /etc/skel/.config/lvim \

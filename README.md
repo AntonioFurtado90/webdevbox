@@ -195,6 +195,15 @@ The initial welcome script already runs this. The second error above happens bec
     $ sudo chmod u+s /usr/bin/newuidmap /usr/bin/newgidmap
     $ __webdevbox_podman_config
 
+### LunarVim shows a treesitter error or a null-ls.nvim clone error
+
+LunarVim pins its plugins against an older neovim (see `NEOVIM_VERSION` in the Dockerfile), but Arch's `neovim` package always tracks the latest upstream release, so two of LunarVim's bundled plugins used to break on a fresh box:
+
+* `Failed to source .../nvim-treesitter/plugin/nvim-treesitter.lua` / `Overriding existing predicate has-ancestor?` — recent neovim registers the `has-ancestor?`/`has-parent?` query predicates natively, and the bundled nvim-treesitter tried to register them again without allowing an override.
+* `fatal: could not read Username for 'https://github.com'` while installing `null-ls.nvim` — the upstream `jose-elias-alvarez/null-ls.nvim` repository was deleted by its maintainer; the community fork `nvimtools/none-ls.nvim` is a drop-in replacement.
+
+Both are now patched directly in the Dockerfile (right after the LunarVim install step), so a fresh build/box no longer hits either error. If you're on an image built before this fix, rebuild it, or apply the same two `sed` patches by hand to `~/.local/share/lunarvim/`.
+
 Happy Hacking!
 
 ### Links
