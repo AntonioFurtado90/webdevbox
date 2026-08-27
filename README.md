@@ -199,10 +199,14 @@ The initial welcome script already runs this. The second error above happens bec
 
 LunarVim pins its plugins against an older neovim (see `NEOVIM_VERSION` in the Dockerfile), but Arch's `neovim` package always tracks the latest upstream release, so two of LunarVim's bundled plugins used to break on a fresh box:
 
-* `Failed to source .../nvim-treesitter/plugin/nvim-treesitter.lua` / `Overriding existing predicate has-ancestor?` — recent neovim registers the `has-ancestor?`/`has-parent?` query predicates natively, and the bundled nvim-treesitter tried to register them again without allowing an override.
+* `Failed to source .../nvim-treesitter/plugin/nvim-treesitter.lua` / `Overriding existing predicate has-ancestor?` (or `Overriding existing directive trim!`, or any other predicate/directive name) — recent neovim already registers several of nvim-treesitter's query predicates/directives natively, and the bundled nvim-treesitter tries to register them again without allowing an override. This can surface one name at a time, depending on which filetype/query triggers it first.
 * `fatal: could not read Username for 'https://github.com'` while installing `null-ls.nvim` — the upstream `jose-elias-alvarez/null-ls.nvim` repository was deleted by its maintainer; the community fork `nvimtools/none-ls.nvim` is a drop-in replacement.
 
-Both are now patched directly in the Dockerfile (right after the LunarVim install step), so a fresh build/box no longer hits either error. If you're on an image built before this fix, rebuild it, or apply the same two `sed` patches by hand to `~/.local/share/lunarvim/`.
+Both are now patched directly in the Dockerfile (right after the LunarVim install step — every `add_predicate`/`add_directive` call in nvim-treesitter is forced to override, not just `has-ancestor?`/`has-parent?`), so a fresh build/box no longer hits either error. If you're on an image built before this fix, rebuild it, or apply the same `sed` patches by hand to `~/.local/share/lunarvim/`.
+
+### `node`/`python` exist but asdf says "No version is set"
+
+The Dockerfile pre-installs Python and Node.js via asdf and runs `asdf set -u` for both, but that command writes to `$HOME/.tool-versions`, and at build time `$HOME` is `/root` — a file that never got copied into `/etc/skel` alongside `.asdf` itself. So every new box had the versions installed but no global default pointing at them (`asdf current` showed `______` for everything). Fixed by also copying `/root/.tool-versions` into `/etc/skel`. If you're on an older image, run `asdf set -u nodejs <installed-version>` / `asdf set -u python <installed-version>` once (check `ls ~/.asdf/installs/nodejs` for the installed version string).
 
 Happy Hacking!
 

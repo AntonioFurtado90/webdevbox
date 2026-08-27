@@ -147,10 +147,13 @@ RUN export PATH="$HOME/.asdf/shims:$PATH" && LV_BRANCH="release-${LUNARVIM_VERSI
 # LunarVim ${LUNARVIM_VERSION} pins plugins for neovim ${NEOVIM_VERSION}, but Arch's `neovim`
 # package (installed above) tracks upstream head, so two of LunarVim's bundled plugins are
 # broken out of the box on this image:
-#   1. nvim-treesitter (still) registers the "has-ancestor?"/"has-parent?" query predicates
-#      unconditionally; recent neovim registers them natively, so nvim-treesitter's own
-#      registration throws "Overriding existing predicate" and aborts loading treesitter
-#      entirely. Force the override instead of erroring.
+#   1. nvim-treesitter (still) unconditionally registers its query predicates/directives
+#      (has-ancestor?, has-parent?, trim!, ...); recent neovim already registers several of
+#      these natively, so nvim-treesitter's own registration throws "Overriding existing
+#      predicate/directive" and aborts loading treesitter entirely the first time a buffer
+#      needing one of the colliding names is opened. Force every add_predicate/add_directive
+#      call in the file to override instead of erroring (harmless for the ones that don't
+#      collide with anything).
 #   2. jose-elias-alvarez/null-ls.nvim was deleted upstream (the maintainer archived/removed
 #      it); the community fork nvimtools/none-ls.nvim is a drop-in replacement that keeps the
 #      same `require("null-ls")` module name, so LunarVim's own null-ls integration code needs
@@ -158,6 +161,8 @@ RUN export PATH="$HOME/.asdf/shims:$PATH" && LV_BRANCH="release-${LUNARVIM_VERSI
 RUN sed -i \
         -e 's/query\.add_predicate("has-ancestor?", has_ancestor)/query.add_predicate("has-ancestor?", has_ancestor, { force = true })/' \
         -e 's/query\.add_predicate("has-parent?", has_ancestor)/query.add_predicate("has-parent?", has_ancestor, { force = true })/' \
+        -e 's/query\.add_directive("make-range!", function() end)/query.add_directive("make-range!", function() end, { force = true })/' \
+        -e 's/^end)$/end, { force = true })/' \
         /root/.local/share/lunarvim/site/pack/lazy/opt/nvim-treesitter/lua/nvim-treesitter/query_predicates.lua \
     && sed -i \
         -e 's#{ "jose-elias-alvarez/null-ls.nvim", lazy = true },#{ "nvimtools/none-ls.nvim", name = "null-ls.nvim", lazy = true },#' \
@@ -169,6 +174,7 @@ RUN mkdir -p /etc/skel/.local/share \
     && mv /root/.local/share/lunarvim /etc/skel/.local/share/lunarvim \
     && mv /root/.local/bin/lvim /etc/skel/.local/bin/lvim \
     && mv /root/.asdf /etc/skel/ \
+    && mv /root/.tool-versions /etc/skel/.tool-versions \
     && sed 's/\/root/$HOME/g' -i /etc/skel/.local/bin/lvim
 
 COPY helpers/config.lua /etc/skel/.config/lvim
