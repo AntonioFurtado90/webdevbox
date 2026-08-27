@@ -158,15 +158,28 @@ RUN export PATH="$HOME/.asdf/shims:$PATH" && LV_BRANCH="release-${LUNARVIM_VERSI
 #      it); the community fork nvimtools/none-ls.nvim is a drop-in replacement that keeps the
 #      same `require("null-ls")` module name, so LunarVim's own null-ls integration code needs
 #      no other changes.
+#   3. nvim-treesitter's exclude_children! directive calls node:range() without checking
+#      that the captured node exists, which crashes the treesitter highlighter (as a
+#      "Decoration provider" error) on some buffers/queries where that capture is optional.
+#   4. bufferline.nvim asserts its internal segment table "must be a list", but it builds
+#      that table as a literal `{ a, b, c, ... }` where some entries are legitimately nil
+#      (e.g. no icon/duplicate-prefix for a given buffer); newer neovim's is_list check no
+#      longer tolerates the resulting holes even though the actual summing code (which uses
+#      pairs(), not ipairs()) handles them fine. The assert is purely defensive, so drop it.
 RUN sed -i \
         -e 's/query\.add_predicate("has-ancestor?", has_ancestor)/query.add_predicate("has-ancestor?", has_ancestor, { force = true })/' \
         -e 's/query\.add_predicate("has-parent?", has_ancestor)/query.add_predicate("has-parent?", has_ancestor, { force = true })/' \
         -e 's/query\.add_directive("make-range!", function() end)/query.add_directive("make-range!", function() end, { force = true })/' \
         -e 's/^end)$/end, { force = true })/' \
         /root/.local/share/lunarvim/site/pack/lazy/opt/nvim-treesitter/lua/nvim-treesitter/query_predicates.lua \
+    && sed -i -E ':a;N;$!ba;s/local node = match\[capture_id\]\n  local start_row, start_col, end_row, end_col = node:range\(\)/local node = match[capture_id]\n  if not node then\n    return\n  end\n  local start_row, start_col, end_row, end_col = node:range()/' \
+        /root/.local/share/lunarvim/site/pack/lazy/opt/nvim-treesitter/lua/nvim-treesitter/query_predicates.lua \
     && sed -i \
         -e 's#{ "jose-elias-alvarez/null-ls.nvim", lazy = true },#{ "nvimtools/none-ls.nvim", name = "null-ls.nvim", lazy = true },#' \
-        /root/.local/share/lunarvim/lvim/lua/lvim/plugins.lua
+        /root/.local/share/lunarvim/lvim/lua/lvim/plugins.lua \
+    && sed -i \
+        -e '/assert(utils\.is_list(segments), "Segments must be a list")/d' \
+        /root/.local/share/lunarvim/site/pack/lazy/opt/bufferline.nvim/lua/bufferline/ui.lua
 
 RUN mkdir -p /etc/skel/.local/share \
     && mkdir -p /etc/skel/.local/bin \
